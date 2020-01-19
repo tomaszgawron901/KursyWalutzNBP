@@ -11,6 +11,8 @@ namespace KursyWalutzNBPClassLibrary
     [DataContract(Name = "pozycja", Namespace = "")]
     public class pozycja
     {
+        public info dateInformation;
+
         [DataMember(Name = "nazwa_waluty", Order = 1)]
         public string name = "";
 
@@ -26,7 +28,7 @@ namespace KursyWalutzNBPClassLibrary
             get { return buyingRate.ToString(); }
             set
             {
-                this.buyingRate = float.Parse(value);
+                this.buyingRate = double.Parse(value);
             }
         }
 
@@ -36,75 +38,25 @@ namespace KursyWalutzNBPClassLibrary
             get { return sellingRate.ToString(); }
             set
             {
-                this.sellingRate = float.Parse(value);
+                this.sellingRate = double.Parse(value);
             }
         }
 
-        public float buyingRate;
-        public float sellingRate;
-
-
+        public double buyingRate;
+        public double sellingRate;
     }
 
 
-    [CollectionDataContract(Name = "tabela_kursow", ItemName = "pozycja", Namespace = "")]
-    class tabela_kursow: List<pozycja>
+    [DataContract(Name = "tabela_kursow", Namespace = "")]
+    public class info
     {
-        public static string[] availableCurrencyCodes = { "USD", "EUR", "CHF", "GBP" };
+        [DataMember(Name = "data_publikacji")]
+        public DateTime publicationDate;
 
-        public tabela_kursow()
-            : base()
-        {
-        }
-
-        public tabela_kursow(pozycja[] items)
-            : base()
-        {
-            foreach (pozycja item in items)
-            {
-                Add(item);
-            }
-        }
-
-        new public void Add(pozycja item)
-        {
-            if (availableCurrencyCodes.Contains(item.currencyCode))
-                base.Add(item);
-        }
-
-        /// <summary>
-        /// Returns first pozycja with given currencyCode.
-        /// </summary>
-        public pozycja getByCurrencyCode(string currencyCode)
-        {
-            foreach(pozycja p in this)
-            {
-                if (p.currencyCode == currencyCode) return p;
-            }
-            throw new KeyNotFoundException();
-        }
-
-        public float averageBuyingRate()
-        {
-            float sum = 0;
-            foreach(pozycja p in this)
-            {
-                sum += p.buyingRate;
-            }
-            return sum / this.Count;
-        }
-
-        public float averagesellingRate()
-        {
-            float sum = 0;
-            foreach (pozycja p in this)
-            {
-                sum += p.sellingRate;
-            }
-            return sum / this.Count;
-        }
-
+        [DataMember(Name = "data_notowania")]
+        public DateTime entryDate;
     }
 
+   
 
 }

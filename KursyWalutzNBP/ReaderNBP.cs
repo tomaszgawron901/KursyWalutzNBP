@@ -58,14 +58,39 @@ namespace KursyWalutzNBPClassLibrary
             return stringFileNames;
         }
 
-        public void readTable(string path, string currencyCode)
+        public pozycja readPozycja(string path, string currencyCode)
         {
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load($"{ReaderNBP.path}{path}.xml");
             var reader = new XmlTextReader(new StringReader(xmlDoc.OuterXml));
-            DataContractSerializer serializer = new DataContractSerializer(typeof(tabela_kursow));
-            var p = (tabela_kursow)serializer.ReadObject(reader, true);
-            var tt = p.getByCurrencyCode("EUR");
+            DataContractSerializer serializer = new DataContractSerializer(typeof(info));
+            var information = (info)serializer.ReadObject(reader, true);
+
+            foreach (XmlNode child in xmlDoc.DocumentElement.ChildNodes)
+            {
+                if(child.Name == "pozycja")
+                {
+                    reader = new XmlTextReader(new StringReader(child.OuterXml));
+                    serializer = new DataContractSerializer(typeof(pozycja));
+                    var poz = (pozycja)serializer.ReadObject(reader, true);
+                    if(poz.currencyCode == currencyCode)
+                    {
+                        poz.dateInformation = information;
+                        return poz;
+                    }
+                }
+            }
+            throw new Exception("Pzoycja not found.");
+        }
+
+        public List<pozycja> readListOfPozycja(DateTime firstDate, DateTime lastDate, string currencyCode)
+        {
+            List<pozycja> output = new List<pozycja>();
+            foreach (var path in readDataNames(firstDate, lastDate))// Can throw an Exception.
+            {
+                output.Add(readPozycja(path, currencyCode));// Can throw an Exception.
+            }
+            return output;
         }
 
 
