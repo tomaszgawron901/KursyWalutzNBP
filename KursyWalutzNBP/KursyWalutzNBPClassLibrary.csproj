@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Statistics.cs" />
     <Compile Include="ReaderNBP.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="tabela_kursow.cs" />

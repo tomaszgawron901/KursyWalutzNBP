@@ -80,7 +80,7 @@ namespace KursyWalutzNBPClassLibrary
                     }
                 }
             }
-            throw new Exception("Pzoycja not found.");
+            throw new Exception("Pozycja not found.");
         }
 
         public List<pozycja> readListOfPozycja(DateTime firstDate, DateTime lastDate, string currencyCode)

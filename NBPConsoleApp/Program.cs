@@ -9,7 +9,89 @@ namespace NBPConsoleApp
 {
     class Program
     {
-        static (
+        static class Controller
+        {
+            private static string[] availableCurrencyCodes = new string[]{ "USD", "EUR", "CHF", "GBP" };
+
+
+            public static void start()
+            {
+                do
+                {
+                    while(true)
+                    {
+                        Console.WriteLine("Podaj kod waluty, datę początkową i datę końcową (np: EUR 2018-09-01 2018-09-20) ");
+                        try
+                        {
+                            string[] inputs = Console.ReadLine().Split(' ').Where(input => input != "" && input != null).ToArray();
+                            if(inputs.Length != 3)
+                            {
+                                throw new ArgumentException("Nieprawidłowy ciąg znaków.");
+                            }
+
+                            string currencyCode = setCurrencyCode(inputs[0]);
+                            DateTime firstDate = setDateTime(inputs[1]);
+                            DateTime lastDate = setDateTime(inputs[2]);
+                            if (firstDate > lastDate) throw new ArgumentException("Początkowa data jest więkasz od daty końcowej.");
+                            ReaderNBP reader = new ReaderNBP();
+                            Console.WriteLine("Pobieranie danych...");
+                            writeInfo(reader.readListOfPozycja(firstDate, lastDate, currencyCode).getInfo());
+
+                            break;
+                        }
+                        catch(ArgumentException e)
+                        {
+                            Console.WriteLine(e.Message);
+                            Console.WriteLine("Spróbuj ponownie.");
+                        }catch(System.Net.WebException)
+                        {
+                            Console.WriteLine("Nieudało się pobrać danych. Spróbuj ponownie później.");
+                        }
+                        catch
+                        {
+                            Console.WriteLine("Nieznany błąd. Przepraszamy, sróbuj ponownie.");
+                        }
+                    }
+
+
+                } while (confirming("Czy chcesz kontynuować (T/N)?", 'T'));
+            }
+
+
+            private static bool confirming(string notification, char c)
+            {
+                Console.Write(notification);
+                c = char.ToUpper(c);
+                var key = Console.ReadKey();
+                Console.WriteLine();
+                return char.ToUpper(key.KeyChar) == c;
+
+            }
+
+            public static string setCurrencyCode(string code)
+            {
+                code = code.ToUpper();
+                if (!Controller.availableCurrencyCodes.Contains(code))
+                    throw new ArgumentException("Niewłaściwy kod waluty. Dostępne kody waluty to: USD, EUR, CHF, GBP.");
+                return code;
+            }
+
+            public static DateTime setDateTime(string stringDate)
+            {
+                DateTime date;
+                try
+                {
+                    date = DateTime.Parse(stringDate);
+                }
+                catch
+                {
+                    throw new ArgumentException("Niewłaciwie podana data.");
+                }
+                return date;
+            }
+
+
+            public static void writeInfo((
             double averageSellingRate,
             double averageBuyingTare,
             double sellingRateStandardDeviation,
@@ -17,80 +99,44 @@ namespace NBPConsoleApp
             List<pozycja> minimumSellingRatePozycja,
             List<pozycja> maximumSellingRatePozycja,
             List<pozycja> minimumBuyingRatePozycja,
-            List<pozycja> maximumBuyingRatePozycja) getInfo(List<pozycja> pozycje)
-        {
-            if(pozycje.Count == 0 || pozycje is null)
+            List<pozycja> maximumBuyingRatePozycja) info)
             {
-                throw new Exception("Nothing to write info about.");
-            }
-            double sumOfSellingRate = 0;
-            double sumOfBuyingRate = 0;
-
-            List<pozycja> minimumSellingRatePozycja = new List<pozycja>(){ pozycje[0] };
-            List<pozycja> maximumSellingRatePozycja = new List<pozycja>() { pozycje[0] };
-
-            List<pozycja> minimumBuyingRatePozycja = new List<pozycja>() { pozycje[0] };
-            List<pozycja> maximumBuyingRatePozycja = new List<pozycja>() { pozycje[0] };
-
-            foreach (pozycja poz in pozycje)
-            {
-                sumOfSellingRate += poz.sellingRate;
-                sumOfBuyingRate += poz.buyingRate;
-
-                if (poz.sellingRate < minimumSellingRatePozycja[0].sellingRate)
-                    minimumSellingRatePozycja = new List<pozycja> { poz };
-                else if (poz.sellingRate == minimumSellingRatePozycja[0].sellingRate)
-                    minimumSellingRatePozycja.Add(poz);
-
-                if (poz.sellingRate > maximumSellingRatePozycja[0].sellingRate)
-                    maximumSellingRatePozycja = new List<pozycja> { poz };
-                else if (poz.sellingRate == maximumSellingRatePozycja[0].sellingRate)
-                    maximumSellingRatePozycja.Add(poz);
-
-
-                if (poz.buyingRate < minimumBuyingRatePozycja[0].buyingRate)
-                    minimumBuyingRatePozycja = new List<pozycja> { poz };
-                else if (poz.buyingRate == minimumBuyingRatePozycja[0].buyingRate)
-                    minimumBuyingRatePozycja.Add(poz);
-
-                if (poz.buyingRate > maximumBuyingRatePozycja[0].buyingRate)
-                    maximumBuyingRatePozycja = new List<pozycja> { poz };
-                else if (poz.buyingRate == maximumBuyingRatePozycja[0].buyingRate)
-                    maximumBuyingRatePozycja.Add(poz);
+                Console.WriteLine();
+                writeElement("Średni kurs sprzedaży: ", info.averageSellingRate);
+                writeElement("Odchylenie standardowe kursu sprzdaży: ", info.sellingRateStandardDeviation);
+                writeList($"Minimalna wartość kursu sprzedaży wynosiła {info.minimumSellingRatePozycja[0].sellingRate} w dniach", info.minimumSellingRatePozycja);
+                writeList($"Maxymalna wartość kursu sprzedaży wynosiła {info.maximumSellingRatePozycja[0].sellingRate} w dniach", info.maximumSellingRatePozycja);
+                Console.WriteLine();
+                writeElement("Średni kurs kupna: ", info.averageBuyingTare);
+                writeElement("Odchylenie standardowe kursu kupna: ", info.buyingRateStandardDeviation);
+                writeList($"Minimalna wartość kursu kupna wynosiła {info.minimumBuyingRatePozycja[0].buyingRate} w dniach", info.minimumBuyingRatePozycja);
+                writeList($"Maxymalna wartość kursu kupna wynosiła {info.maximumBuyingRatePozycja[0].buyingRate} w dniach", info.maximumBuyingRatePozycja);
+                Console.WriteLine();
             }
 
-            double averageSellingRate = sumOfSellingRate / pozycje.Count;
-            double averageBuyingTare = sumOfBuyingRate / pozycje.Count;
-
-            double Es = 0; // sum of diference between average and current selling rate to the power of 2.
-            double Eb = 0; // sum of diference between average and current buying rate to the power of 2.
-            foreach (pozycja poz in pozycje)
+            private static void writeElement(string introduction, double number)
             {
-                Es += Math.Pow(poz.sellingRate - averageSellingRate, 2);
-                Eb += Math.Pow(poz.buyingRate - averageBuyingTare, 2);
+                Console.WriteLine(introduction + string.Format("{0:0.0000}", number));
             }
 
-            double sellingRateStandardDeviation = Math.Sqrt(Es / (pozycje.Count - 1));
-            double buyingRateStandardDeviation = Math.Sqrt(Eb / (pozycje.Count - 1));
+            private static void writeList(string introduction, List<pozycja> lista)
+            {
+                Console.Write(introduction);
+                foreach(pozycja poz in lista)
+                {
+                    Console.Write(string.Format(" {0:yyyy-MM-dd}", poz.dateInformation.publicationDate));
+                }
+                Console.WriteLine();
+            }
 
-            return (
-                averageSellingRate,
-                averageBuyingTare,
-                sellingRateStandardDeviation,
-                buyingRateStandardDeviation,
-                minimumSellingRatePozycja,
-                maximumSellingRatePozycja,
-                minimumBuyingRatePozycja,
-                maximumBuyingRatePozycja) ;
+
         }
 
 
         static void Main(string[] args)
         {
 
-            ReaderNBP reader = new ReaderNBP();
-            var dn = reader.readListOfPozycja(new DateTime(2010, 1, 2), new DateTime(2011, 1, 3), "EUR");
-            var sd = getInfo(dn);
+            Controller.start();
         }
     }
 }
