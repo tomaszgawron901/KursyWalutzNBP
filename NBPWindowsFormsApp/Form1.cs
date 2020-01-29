@@ -16,7 +16,7 @@ namespace NBPWindowsFormsApp
     {
         public bool searching = false;
 
-        public void start()
+        public async Task searchAndWriteInfoAsync()
         {
             if (searching) return;
             outputArea.Clear();
@@ -29,13 +29,15 @@ namespace NBPWindowsFormsApp
                 DateTime firstDate = dateInput1.Value;
                 DateTime lastDate = dateInput2.Value;
                 if (firstDate > lastDate) throw new ArgumentException("Początkowa data jest więkasz od daty końcowej.");
-                
-                outputArea.WriteLine("Pobieranie danych...");
-                searching = true;
-                downloadButton.Enabled = false;
 
+
+                             
+                onSearchStart();
+                outputArea.WriteLine("Pobieranie danych...");
                 ReaderNBP reader = new ReaderNBP();
-                writeInfo(reader.readListOfPozycja(firstDate, lastDate, currencyCode).getInfo());
+                var info = await Task.Run(()=> reader.readListOfPozycja(firstDate, lastDate, currencyCode));
+
+                writeInfo(await Task.Run(info.getInfo));
             }
             catch (ArgumentException e)
             {
@@ -50,6 +52,21 @@ namespace NBPWindowsFormsApp
             {
                 outputArea.WriteLine("Nieznany błąd. Przepraszamy, sróbuj ponownie.");
             }
+            onSearchEnd();
+        }
+
+
+
+
+
+        private void onSearchStart()
+        {
+            searching = true;
+            downloadButton.Enabled = false;
+        }
+
+        private void onSearchEnd()
+        {
             downloadButton.Enabled = true;
             searching = false;
         }
@@ -118,12 +135,12 @@ namespace NBPWindowsFormsApp
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private async void button1_Click(object sender, EventArgs e)
         {
             if (searching) return;
-            start();
+            await searchAndWriteInfoAsync();
 
-            
+
         }
     }
 }
